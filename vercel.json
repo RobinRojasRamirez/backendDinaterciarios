@@ -4,7 +4,7 @@
       "src": "src/main.ts",
       "use": "@vercel/nestjs",
       "config": {
-        "includeFiles": ["node_modules/.prisma/**", "node_modules/@prisma/**"]
+        "includeFiles": ["node_modules/.prisma/**", "node_modules/@prisma/**", "tsconfig.json"]
       }
     }
   ],
