@@ -30,8 +30,28 @@ async function createApp(): Promise<void> {
 
   const corsOrigins = configService.get<string[]>('app.corsOrigin') ?? [];
 
+  const allowedOrigins = [
+    ...corsOrigins,
+    'https://localhost',
+    'http://localhost',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8100',
+  ];
+
   nestApp.enableCors({
-    origin: corsOrigins,
+    origin: (origin: any, callback: any) => {
+      // Permitir peticiones sin Origin
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS: Origin no permitido: ${origin}`), false);
+    },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
