@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { RecordsService } from './records.service';
-import { PrismaService } from '@database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 import { CreateRecordDto } from '../dto/create-record.dto';
 import { UpdateRecordDto } from '../dto/update-record.dto';
 

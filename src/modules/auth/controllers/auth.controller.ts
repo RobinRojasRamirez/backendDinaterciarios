@@ -5,8 +5,8 @@ import { LoginRequestDto } from '../dto/login-request.dto';
 import { LoginResponseDto } from '../dto/login-response.dto';
 import { ProfileResponseDto } from '../dto/profile-response.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
-import { Public } from '@common/decorators/public.decorator';
-import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Public } from '../../../common/decorators/public.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')

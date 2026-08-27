@@ -18,8 +18,8 @@ import { UpdateRecordDto } from '../dto/update-record.dto';
 import { QueryRecordsDto } from '../dto/query-records.dto';
 import { ChartsQueryDto } from '../dto/charts-query.dto';
 import { RecordResponseDto } from '../dto/record-response.dto';
-import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { PaginatedResponse } from '@common/interfaces/api-response.interface';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { PaginatedResponse } from '../../../common/interfaces/api-response.interface';
 
 @ApiTags('Registros')
 @ApiBearerAuth()

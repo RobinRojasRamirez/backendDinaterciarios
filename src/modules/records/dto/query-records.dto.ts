@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsDateString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PaginationDto } from '@common/dto/pagination.dto';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 export class QueryRecordsDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Busqueda por nombre de pozo u operador' })

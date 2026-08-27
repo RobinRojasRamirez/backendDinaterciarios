@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '@database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 import { CreateRecordDto } from '../dto/create-record.dto';
 import { UpdateRecordDto } from '../dto/update-record.dto';
 import { QueryRecordsDto } from '../dto/query-records.dto';

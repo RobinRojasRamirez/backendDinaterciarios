@@ -7,11 +7,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '@database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 import { LoginRequestDto } from '../dto/login-request.dto';
 import { LoginResponseDto } from '../dto/login-response.dto';
 import { ProfileResponseDto } from '../dto/profile-response.dto';
-import { JwtPayload } from '@common/interfaces/jwt-payload.interface';
+import { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
 import { createHash } from 'crypto';
 
 @Injectable()

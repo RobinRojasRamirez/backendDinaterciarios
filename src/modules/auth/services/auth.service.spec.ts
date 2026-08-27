@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
-import { PrismaService } from '@database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 import { LoginRequestDto } from '../dto/login-request.dto';
 
 const mockUsuario = {
