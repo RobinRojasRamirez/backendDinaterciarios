@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateRecordDto } from '../dto/create-record.dto';
 import { UpdateRecordDto } from '../dto/update-record.dto';
@@ -17,6 +18,18 @@ interface VariableConfig {
   unidad: string;
   color: string;
   field: keyof Omit<RecordResponseDto, 'id' | 'fecha' | 'hora' | 'pozo' | 'operador'>;
+}
+
+interface ChartQueryRow {
+  id: string;
+  fecha: Date;
+  pozo: string;
+  presionCabeza: unknown;
+  presionAnular: unknown;
+  velocidad: unknown;
+  corriente: unknown;
+  torque: unknown;
+  cargaPozo: unknown;
 }
 
 const VARIABLES_CONFIG: VariableConfig[] = [
@@ -172,25 +185,37 @@ export class RecordsService {
   }
 
   async getCharts(query: ChartsQueryDto, usuarioId: string) {
-    const where: Record<string, unknown> = {
-      usuarioId,
-      pozo: { contains: query.pozo, mode: 'insensitive' },
-      deletedAt: null,
-    };
+    const filters: Prisma.Sql[] = [
+      Prisma.sql`usuario_id = ${usuarioId}::uuid`,
+      Prisma.sql`pozo ILIKE ${`%${query.pozo}%`}`,
+      Prisma.sql`deleted_at IS NULL`,
+    ];
 
-    if (query.fechaInicio || query.fechaFin) {
-      where.fecha = {};
-      if (query.fechaInicio) (where.fecha as Record<string, unknown>).gte = new Date(query.fechaInicio);
-      if (query.fechaFin) (where.fecha as Record<string, unknown>).lte = new Date(query.fechaFin);
+    if (query.fechaInicio) {
+      filters.push(Prisma.sql`fecha >= ${query.fechaInicio}::date`);
+    }
+    if (query.fechaFin) {
+      filters.push(Prisma.sql`fecha <= ${query.fechaFin}::date`);
     }
 
-    const registros = await this.prisma.registro.findMany({
-      where,
-      orderBy: { fecha: 'asc' },
-    });
+    const registros = await this.prisma.$queryRaw<ChartQueryRow[]>`
+      SELECT
+        id,
+        fecha,
+        pozo,
+        presion_cabeza AS "presionCabeza",
+        presion_anular AS "presionAnular",
+        velocidad,
+        corriente,
+        torque,
+        carga_pozo AS "cargaPozo"
+      FROM registros
+      WHERE ${Prisma.join(filters, ' AND ')}
+      ORDER BY fecha ASC
+    `;
 
     const variables = VARIABLES_CONFIG.map((config) => {
-      const datos = registros.map((r: any) => ({
+      const datos = registros.map((r) => ({
         fecha: r.fecha.toISOString().split('T')[0],
         valor: Number(r[config.field]),
       }));
@@ -206,9 +231,6 @@ export class RecordsService {
         datos,
       };
     });
-
-    console.log('=== CHARTS VARIABLES ===');
-    console.log(JSON.stringify(variables, null, 2));
 
     return { pozo: query.pozo, variables };
   }

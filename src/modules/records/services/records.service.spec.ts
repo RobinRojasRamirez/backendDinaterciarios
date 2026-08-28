@@ -33,6 +33,7 @@ const mockPrisma = {
     count: jest.fn(),
     update: jest.fn(),
   },
+  $queryRaw: jest.fn(),
 };
 
 describe('RecordsService', () => {
@@ -301,34 +302,91 @@ describe('RecordsService', () => {
   });
 
   describe('getCharts', () => {
+    const rawRows = [
+      {
+        id: 'uuid-reg-1',
+        fecha: new Date('2026-06-30T00:00:00.000Z'),
+        pozo: 'POZO CHICHIMENE-01',
+        presionCabeza: 2340,
+        presionAnular: 1850,
+        velocidad: 120,
+        corriente: 45.2,
+        torque: 850,
+        cargaPozo: 72,
+      },
+    ];
+
+    function flattenSql(fn: jest.Mock): string {
+      const [strings, ...values] = fn.mock.calls[0];
+      let sql = '';
+      for (let i = 0; i < strings.length; i++) {
+        sql += strings[i];
+        if (i < values.length) {
+          const value = values[i];
+          if (
+            value &&
+            typeof value === 'object' &&
+            Array.isArray((value as { strings?: string[] }).strings)
+          ) {
+            const nested = value as { strings: string[]; values: unknown[] };
+            let nestedSql = '';
+            for (let j = 0; j < nested.strings.length; j++) {
+              nestedSql += nested.strings[j];
+              if (j < nested.values.length) {
+                nestedSql += JSON.stringify(nested.values[j]);
+              }
+            }
+            sql += nestedSql;
+          } else {
+            sql += JSON.stringify(value);
+          }
+        }
+      }
+      return sql;
+    }
+
     beforeEach(() => {
-      mockPrisma.registro.findMany.mockResolvedValue([mockRegistro]);
+      mockPrisma.$queryRaw.mockResolvedValue(rawRows);
     });
 
-    it('should only use records belonging to the authenticated user', async () => {
+    afterEach(() => {
+      mockPrisma.$queryRaw.mockReset();
+    });
+
+    it('should query with $queryRaw scoped to the authenticated user', async () => {
       await service.getCharts({ pozo: 'POZO CHICHIMENE-01' }, USUARIO_A);
 
-      const findManyArg = mockPrisma.registro.findMany.mock.calls[0][0];
-      const where = findManyArg.where as Record<string, unknown>;
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
 
-      expect(where.usuarioId).toBe(USUARIO_A);
-      expect(where.usuarioId).not.toBe(USUARIO_B);
-      expect(where.pozo).toEqual({ contains: 'POZO CHICHIMENE-01', mode: 'insensitive' });
-      expect(where.deletedAt).toBeNull();
+      const sql = flattenSql(mockPrisma.$queryRaw);
+      expect(sql).toContain('usuario_id');
+      expect(sql).toContain(USUARIO_A);
+      expect(sql).toContain('deleted_at IS NULL');
+      expect(sql).toContain('pozo ILIKE');
+      expect(sql).toContain('%POZO CHICHIMENE-01%');
     });
 
-    it('should keep the date range filter', async () => {
+    it('should filter the date range using date casts without timezone conversion', async () => {
       await service.getCharts(
         { pozo: 'POZO CHICHIMENE-01', fechaInicio: '2026-06-01', fechaFin: '2026-06-30' },
         USUARIO_A,
       );
 
-      const findManyArg = mockPrisma.registro.findMany.mock.calls[0][0];
-      const where = findManyArg.where as Record<string, unknown>;
+      const sql = flattenSql(mockPrisma.$queryRaw);
+      expect(sql).toContain('2026-06-01');
+      expect(sql).toContain('2026-06-30');
+      expect(sql).toContain('::date');
+      expect(sql).toContain('fecha >=');
+      expect(sql).toContain('fecha <=');
+    });
 
-      expect(where.usuarioId).toBe(USUARIO_A);
-      expect((where.fecha as Record<string, unknown>).gte).toEqual(new Date('2026-06-01'));
-      expect((where.fecha as Record<string, unknown>).lte).toEqual(new Date('2026-06-30'));
+    it('should not filter by a date that is not provided', async () => {
+      await service.getCharts({ pozo: 'POZO CHICHIMENE-01', fechaInicio: '2026-06-01' }, USUARIO_A);
+
+      const sql = flattenSql(mockPrisma.$queryRaw);
+      expect(sql).toContain('2026-06-01');
+      expect(sql).toContain('::date');
+      expect(sql).not.toContain('fecha <=');
     });
 
     it('should build variables from the records of the authenticated user', async () => {
@@ -338,6 +396,20 @@ describe('RecordsService', () => {
       expect(result.variables).toHaveLength(6);
       expect(result.variables[0]).toMatchObject({ id: 'presion-cabeza' });
       expect(result.variables[0].datos).toHaveLength(1);
+      expect(result.variables[0].datos[0]).toEqual({ fecha: '2026-06-30', valor: 2340 });
+      expect(result.variables[0].valorActual).toBe(2340);
+    });
+
+    it('should return empty datos when there are no records', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getCharts({ pozo: 'POZO SIN DATOS' }, USUARIO_A);
+
+      expect(result.variables).toHaveLength(6);
+      result.variables.forEach((variable) => {
+        expect(variable.datos).toHaveLength(0);
+        expect(variable.valorActual).toBe(0);
+      });
     });
   });
 });
