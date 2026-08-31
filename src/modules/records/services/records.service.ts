@@ -126,6 +126,21 @@ export class RecordsService {
     };
   }
 
+  async getPozos(usuarioId: string): Promise<string[]> {
+    const rows = await this.prisma.registro.findMany({
+      distinct: ['pozo'],
+      select: { pozo: true },
+      where: {
+        usuarioId,
+        deletedAt: null,
+        pozo: { not: '' },
+      },
+      orderBy: { pozo: 'asc' },
+    });
+
+    return rows.map((row) => row.pozo);
+  }
+
   async findById(id: string, usuarioId: string): Promise<RecordResponseDto> {
     const registro = await this.prisma.registro.findFirst({
       where: { id, usuarioId, deletedAt: null },

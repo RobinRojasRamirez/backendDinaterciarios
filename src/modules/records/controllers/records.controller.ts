@@ -56,6 +56,15 @@ export class RecordsController {
     return this.recordsService.getCharts(query, usuarioId);
   }
 
+  @Get('pozos')
+  @ApiOperation({ summary: 'Obtener lista de pozos existentes (sin duplicados)' })
+  @ApiOkResponse({ description: 'Lista de nombres de pozos distintos' })
+  async getPozos(
+    @CurrentUser('sub') usuarioId: string,
+  ): Promise<string[]> {
+    return this.recordsService.getPozos(usuarioId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener registro por ID' })
   async findById(
