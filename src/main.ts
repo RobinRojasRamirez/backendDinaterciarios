@@ -37,6 +37,7 @@ async function createApp(): Promise<void> {
     'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:8100',
+    'capacitor://localhost',
   ];
 
   nestApp.enableCors({
